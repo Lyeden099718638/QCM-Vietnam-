@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vietnamese QCM Quiz</title>
+<style>
+:root{--navy:#14213d;--blue:#2563eb;--bg:#f4f7fb;--green:#15803d;--red:#dc2626}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#172033}
+header{background:linear-gradient(120deg,#14213d,#2563eb);color:white;padding:25px 16px;text-align:center}
+header h1{margin:0 0 6px;font-size:clamp(23px,5vw,34px)}header p{margin:0;opacity:.9}
+main{max-width:900px;margin:22px auto;padding:0 14px}
+.panel,.quiz-card,.result{background:#fff;border-radius:18px;padding:20px;box-shadow:0 5px 24px #14213d12;margin-bottom:16px}
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label{font-weight:650;font-size:14px;display:block;margin-bottom:6px}
+select,button{font:inherit;border-radius:10px;padding:12px;border:1px solid #d6deea;width:100%}
+button{background:var(--blue);color:#fff;border:0;font-weight:700;cursor:pointer}
+button.secondary{background:#e9efff;color:#1742a0}button:disabled{opacity:.45;cursor:not-allowed}
+.topline{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.progress{height:9px;background:#e7edf5;border-radius:20px;overflow:hidden;margin:14px 0}
+.progress>div{height:100%;background:#2563eb;width:0;transition:width .2s}
+.meta{font-size:13px;color:#64748b}.question{font-size:20px;font-weight:750;line-height:1.45;margin:15px 0}
+.option{display:flex;align-items:flex-start;gap:10px;padding:13px 14px;border:1px solid #dbe3ef;border-radius:12px;margin:9px 0;cursor:pointer;line-height:1.45}
+.option input{margin-top:4px;accent-color:#2563eb}.option.correct{background:#dcfce7;border-color:#16a34a;color:#14532d;font-weight:700}
+.option.wrong{background:#fee2e2;border-color:#dc2626;color:#7f1d1d}
+.feedback{padding:12px;border-radius:10px;margin-top:12px;font-weight:650;background:#f1f5f9}
+.feedback.good{background:#dcfce7;color:#166534}.feedback.bad{background:#fee2e2;color:#991b1b}
+.nav{display:flex;gap:10px;margin-top:16px}.nav button{flex:1}
+.hidden{display:none!important}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.stat{background:#f1f5f9;border-radius:12px;padding:14px;text-align:center}.stat b{font-size:24px;display:block}
+.small{font-size:13px;color:#64748b;line-height:1.5}.pill{display:inline-block;padding:5px 9px;border-radius:99px;background:#eaf0ff;color:#1d4ed8;font-size:12px;font-weight:700}
+footer{text-align:center;color:#64748b;font-size:12px;padding:20px}
+@media(max-width:520px){.panel,.quiz-card,.result{padding:16px}.question{font-size:18px}.nav{flex-wrap:wrap}.nav button{min-width:40%}}
+</style>
+</head>
+<body>
+<header><h1>Vietnamese QCM Quiz</h1><p>Practice • Normal mode • Random mode</p></header>
+<main>
+<section id="setup" class="panel">
+<h2>Quiz settings</h2>
+<div class="controls">
+<div><label for="mode">Question order</label><select id="mode"><option value="normal">Normal (PDF order)</option><option value="random">Random questions + choices</option></select></div>
+<div><label for="section">Section</label><select id="section"><option value="all">All sections</option><option value="Listening">Listening (Nghe)</option><option value="Reading">Reading (Đọc)</option></select></div>
+<div><label for="count">Number of questions</label><select id="count">
+<option>10</option><option>20</option><option>30</option><option>40</option><option>50</option><option>60</option><option>70</option><option>80</option><option>90</option><option>100</option><option>110</option><option>120</option><option>130</option><option>140</option><option>150</option><option value="all">All available</option>
+</select></div>
+</div>
+<p class="small" id="available"></p>
+<p class="small">Correct answers are highlighted green. If you choose a wrong answer, your choice turns red and the correct answer turns green. Listening questions have no answer key in the supplied PDF, so they are included without automatic correctness feedback.</p>
+<button id="start">Start quiz</button>
+</section>
+<section id="quiz" class="hidden">
+<div class="quiz-card">
+<div class="topline"><span class="pill" id="sectionTag"></span><span class="meta" id="counter"></span><b id="scoreNow">Score: 0</b></div>
+<div class="progress"><div id="progressBar"></div></div>
+<div class="meta" id="questionNo"></div>
+<div class="question" id="questionText"></div>
+<div id="options"></div>
+<div id="feedback" class="feedback hidden" aria-live="polite"></div>
+<div class="nav"><button class="secondary" id="prev">Previous</button><button id="next">Next</button></div>
+</div>
+<button class="secondary" id="finish">Finish quiz</button>
+</section>
+<section id="result" class="result hidden">
+<h2>Quiz results</h2><div class="stats">
+<div class="stat"><b id="totalOut">0</b><span>Questions</span></div>
+<div class="stat"><b id="correctOut">0</b><span>Correct</span></div>
+<div class="stat"><b id="percentOut">0%</b><span>Score</span></div>
+</div><p id="resultNote"></p><button id="restart">Try again</button>
+</section>
+</main>
+<footer>Questions transcribed from the uploaded PDF. Listening answer keys were not supplied.</footer>
+<script>
+const BANK = [{"section": "Listening", "number": 1, "question": "Chị tên gì?", "options": ["Tôi tên là Quyên", "Tôi tên là Quyển", "Tôi tên là Quyền"], "correct": null, "id": "L1"}, {"section": "Listening", "number": 2, "question": "Nhà anh ấy ở đâu?", "options": ["Nhà anh ấy ở Lâm Đồng", "Nhà anh ấy ở Đồng Tháp", "Nhà anh ấy ở Đồng Nai"], "correct": null, "id": "L2"}, {"section": "Listening", "number": 3, "question": "Chị đã đi du lịch được bao nhiêu nước rồi?", "options": ["Khoảng 10 nước", "Khoảng 11 nước", "Khoảng 12 nước"], "correct": null, "id": "L3"}, {"section": "Listening", "number": 4, "question": "Xin lỗi, chị muốn mua gì?", "options": ["Tôi muốn mua áo quần", "Tôi muốn mua quần dài", "Tôi muốn mua áo dài"], "correct": null, "id": "L4"}, {"section": "Listening", "number": 5, "question": "Nhà này anh thuê giá bao nhiêu?", "options": ["Một triệu hai trăm hai mươi ngàn đồng", "Một triệu hai trăm năm mươi ngàn đồng", "Một triệu hai trăm mười lăm ngàn đồng"], "correct": null, "id": "L5"}, {"section": "Listening", "number": 6, "question": "Xin lỗi, cho tôi hỏi chuyến bay đi Hà Nội cất cánh lúc mấy giờ?", "options": ["Dạ, mười giờ mười lăm phút ạ", "Dạ, mười giờ mười phút ạ", "Dạ, mười giờ năm phút ạ"], "correct": null, "id": "L6"}, {"section": "Listening", "number": 7, "question": "................................................. là gì?", "options": ["Anh họ", "Anh rể", "Anh em"], "correct": null, "id": "L7"}, {"section": "Listening", "number": 8, "question": ".................................................. là gì?", "options": ["Bà nội", "Bà ngoại", "Bà cụ"], "correct": null, "id": "L8"}, {"section": "Listening", "number": 9, "question": "Hãy cho biết phát ngôn trên có mấy thanh điệu ?", "options": ["Hai thanh điệu", "Ba thanh điệu", "Bốn thanh điệu"], "correct": null, "id": "L9"}, {"section": "Listening", "number": 10, "question": "Hãy cho biết phát ngôn trên có mấy thanh điệu ?", "options": ["Hai thanh điệu", "Ba thanh điệu", "Bốn thanh điệu"], "correct": null, "id": "L10"}, {"section": "Listening", "number": 11, "question": "Hãy cho biết phát ngôn trên có mấy thanh điệu ?", "options": ["Hai thanh điệu", "Ba thanh điệu", "Bốn thanh điệu"], "correct": null, "id": "L11"}, {"section": "Listening", "number": 12, "question": "Phát ngôn bạn vừa nghe có nghĩa là:", "options": ["Hôm nay, tôi không có thời gian rảnh", "Hôm nay, tôi có thời gian rảnh", "Hôm nay, tôi có nhiều thời gian rảnh"], "correct": null, "id": "L12"}, {"section": "Listening", "number": 13, "question": "Phát ngôn bạn vừa nghe có nghĩa là:", "options": ["Anh ấy mới lấy vợ", "Anh ấy mới cưới vợ", "Anh ấy chưa có vợ"], "correct": null, "id": "L13"}, {"section": "Listening", "number": 14, "question": "Phát ngôn bạn vừa nghe có nghĩa là:", "options": ["Sáng này tôi đi tập thể dục trước khi đi làm", "Ngày nào tôi cũng tập thể dục trước khi đi làm", "Ngày này tôi cũng tập thể dục trước khi đi làm"], "correct": null, "id": "L14"}, {"section": "Listening", "number": 15, "question": "Phát ngôn bạn vừa nghe có nghĩa là:", "options": ["Nhiều quần áo như vậy thì bà Ngọc làm sao may xuể trong một ngày", "Trong một ngày bà Ngọc may được hết mấy bộ quần áo này", "Bà Ngọc may xuể hết được mấy bộ quần áo này trong một ngày"], "correct": null, "id": "L15"}, {"section": "Listening", "number": 16, "question": "Cô gái trong đoạn hội thoại mua mấy tờ báo?", "options": ["1 tờ báo", "2 tờ báo", "3 tờ báo"], "correct": null, "id": "L16"}, {"section": "Listening", "number": 17, "question": "Lớp của Kỳ có bao nhiêu học sinh ?", "options": ["12", "25", "30"], "correct": null, "id": "L17"}, {"section": "Listening", "number": 18, "question": "(Tình huống 1)", "options": ["Chị đi bơi với tôi nhe", "Tôi sẽ đi bơi với chị", "Sao hôm nay chị vui quá vậy?", "Sao hôm nay chị lại không đi bơi vậy?"], "correct": null, "id": "L18"}, {"section": "Listening", "number": 19, "question": "(Tình huống 2)", "options": ["Xin lỗi cô, em quên làm bài", "Xin lỗi cô, ngày mốt em làm bài", "Xin lỗi cô, mong cô vui", "Xin lỗi cô, chúc cô hạnh phúc"], "correct": null, "id": "L19"}, {"section": "Listening", "number": 20, "question": "(Tình huống 3)", "options": ["Không sao đâu", "Bạn nên cẩn thận", "Cám ơn bạn, bạn cứ yên tâm", "Cám ơn bạn rất nhiều"], "correct": null, "id": "L20"}, {"section": "Listening", "number": 21, "question": "(Tình huống 4)", "options": ["Chúc anh bình tĩnh", "Anh nên cẩn thận", "Anh đừng buồn", "Chúc anh hạnh phúc"], "correct": null, "id": "L21"}, {"section": "Listening", "number": 22, "question": "Lâm đến sân bay Nội Bài lúc mấy giờ?", "options": ["9 giờ", "9 giờ 45 phút", "12 giờ", "12 giờ 40 phút"], "correct": null, "id": "L22"}, {"section": "Listening", "number": 23, "question": "Lâm đến thăm và làm việc với công ty Sài Gòn lúc mấy giờ?", "options": ["3 giờ 05 phút", "3 giờ 15 phút", "3 giờ 25 phút", "3 giờ 35 phút"], "correct": null, "id": "L23"}, {"section": "Listening", "number": 24, "question": "Báo Phụ nữ và Viện mẫu Thời trang phối hợp tổ chức gì?", "options": ["Một buổi sinh hoạt cho cả nam và nữ", "Một buổi trình diễn ca múa nhạc thời trang", "Một buổi biểu diễn ngày phụ nữ", "Một buổi sinh hoạt tập thể"], "correct": null, "id": "L24"}, {"section": "Listening", "number": 25, "question": "Mục đích của buổi biểu diễn này là gì?", "options": ["Là gây quỹ từ thiện để giúp đỡ chị em nghèo", "Là gây quỹ ủng hộ cho những người tham dự", "Là để giúp cho chị em phụ nữ tham dự", "Là để giúp cho đông đảo bạn đọc"], "correct": null, "id": "L25"}, {"section": "Listening", "number": 26, "question": "Sau khi sắp xếp trong phòng khách có những gì?", "options": ["Ti vi, cái bàn tròn", "Bộ salon, tivi", "Giá sách, tivi", "Cái bàn tròn, bộ salon"], "correct": null, "id": "L26"}, {"section": "Listening", "number": 27, "question": "Trong đoạn hội thoại nhà bếp gồm có bao nhiêu vật dụng ?", "options": ["4", "2", "3", "5"], "correct": null, "id": "L27"}, {"section": "Listening", "number": 28, "question": "Cầu Sông Hàn nằm ở miền nào của Việt Nam?", "options": ["Miền Nam Việt Nam", "Miền Trung Việt Nam", "Miền Bắc Việt Nam", "Miền Nam Bắc Việt Nam"], "correct": null, "id": "L28"}, {"section": "Listening", "number": 29, "question": "Cầu Sông Hàn được hoàn thành vào ngày nào?", "options": ["2 tháng 9 năm 1998", "29 tháng 3 năm 2000", "9 tháng 3 năm 2000", "29 tháng 3 năm 1998"], "correct": null, "id": "L29"}, {"section": "Listening", "number": 30, "question": "Khi nào chị Mai đi Nhật ?", "options": ["Cuối tuần này", "Cuối tuần sau", "Thứ sáu tuần sau", "Thứ sáu tuần này"], "correct": null, "id": "L30"}, {"section": "Listening", "number": 31, "question": "Chị Mai dự định bao giờ về thăm nhà?", "options": ["1 năm sau", "2 năm sau", "3 năm sau", "4 năm sau"], "correct": null, "id": "L31"}, {"section": "Listening", "number": 32, "question": "Vì sao lúc trước thi cuối cấp chị hai của cô gái vẫn được mẹ cho đi du lịch?", "options": ["Vì người mẹ thích đi du lịch", "Vì người mẹ thương chị hai hơn", "Vì chị hai học giỏi", "Vì chị hai thích đi du lịch"], "correct": null, "id": "L32"}, {"section": "Listening", "number": 33, "question": "Theo người em thì sức học của cô như thế nào so với chị hai?", "options": ["Học bằng", "Học kém hơn", "Học không bằng", "Học giỏi hơn"], "correct": null, "id": "L33"}, {"section": "Listening", "number": 34, "question": "Người chồng chở vợ đi mua gì cho con của họ?", "options": ["Hành lý", "Quần áo", "Va li", "Áo tắm"], "correct": null, "id": "L34"}, {"section": "Listening", "number": 35, "question": "Vì sao chưa đi du lịch mà người phụ nữ đã thấy mệt?", "options": ["Vì chị không đi ngủ sớm", "Vì chị không thích sắp xếp hành lý", "Vì chị ấy phải làm nhiều việc", "Vì chị ấy phải chuẩn bị cơm tối"], "correct": null, "id": "L35"}, {"section": "Reading", "number": 1, "question": "Theo đoạn (1), trước khi chuyển nhà vào Nam, gia đình anh ấy sống ở đâu?", "options": ["Thôn quê", "Thành phố", "Ngoài Bắc", "Thành thị"], "correct": 2, "id": "R1"}, {"section": "Reading", "number": 2, "question": "Theo đoạn (1), vào những ngày nghỉ, anh ấy thường làm gì?", "options": ["Đi câu cá, mót lúa ngoài đồng, chơi trốn tìm", "Đi bơi, đi câu cá, chơi trốn tìm", "Đi câu cá, đi đá bóng, mót lúa ngoài đồng", "Đi bơi, đi câu cá, mót lúa ngoài đồng"], "correct": 3, "id": "R2"}, {"section": "Reading", "number": 3, "question": "Theo đoạn (1), khi nào gia đình anh ấy chuyển lên thành phố Hồ Chí Minh?", "options": ["Khi anh ấy học xong phổ thông", "Khi anh ấy học phổ thông", "Khi anh ấy học đại học", "Khi anh ấy học xong đại học"], "correct": 0, "id": "R3"}, {"section": "Reading", "number": 4, "question": "Theo đoạn (1), theo anh ấy sống ở thành phố có những thuận lợi gì?", "options": ["Có nhiều nơi để học hành, du lịch", "Đi lại dễ dàng, có nhiều nơi vui chơi giải trí, học hành", "Đi lại dễ dàng, có nhiều bãi đất trống để đá banh", "Có nhiều nơi vui chơi, giải trí như chơi trốn tìm, hay “bịt mắt bắt dê”"], "correct": 1, "id": "R4"}, {"section": "Reading", "number": 5, "question": "Từ “kỷ niệm” ở đoạn (2) trong bài đọc có nghĩa là:", "options": ["Những sự việc qua lâu rồi", "Những sự việc đáng nhớ đã qua", "Những điều đáng quý đã cũ", "Những điều không nên nhớ"], "correct": 1, "id": "R5"}, {"section": "Reading", "number": 6, "question": "Theo đoạn (3), vì sao anh ấy cố gắng học hành?", "options": ["Vì anh ấy muốn lên thành phố học", "Vì anh ấy muốn trở thành kỹ sư xây dựng cầu đường", "Vì anh ấy không muốn ở dưới quê", "Vì anh ấy muốn ba mẹ vui lòng"], "correct": 1, "id": "R6"}, {"section": "Reading", "number": 7, "question": "Theo đoạn (3), bây giờ, anh ấy làm việc ở đâu?", "options": ["Công ty ở xa thành phố Hồ Chí Minh", "Công ty ở gần thành phố Hồ Chí Minh", "Công ty lớn ở thành phố Hồ Chí Minh", "Công ty nhỏ ở thành phố Hồ Chí Minh"], "correct": 2, "id": "R7"}, {"section": "Reading", "number": 8, "question": "Theo đoạn (3), anh ấy đang để ý ai?", "options": ["Một cô gái cùng cơ quan", "Một cô gái cùng xóm", "Một cô gái ở dưới quê", "Một cô gái ở ngoài Bắc"], "correct": 0, "id": "R8"}, {"section": "Reading", "number": 9, "question": "Theo đoạn (4), vì sao anh ấy không dám ngỏ lời yêu với cô gái?", "options": ["Vì anh ấy sợ cô ấy chấp nhận", "Vì anh ấy sợ cô ấy nhận lời yêu", "Vì anh ấy nhút nhát", "Vì anh ấy lo lắng"], "correct": 2, "id": "R9"}, {"section": "Reading", "number": 10, "question": "Câu nào sau đây là câu không đúng với nội dung bài đọc?", "options": ["Khi anh ấy sáu tuổi thì gia đình anh ấy chuyển nhà vào Nam", "Lúc ở quê, anh ấy và bạn bè thường chơi bóng đá ở bãi đất trống đầu làng", "Theo quan niệm của người Việt, con trai phải ngỏ lời trước", "Cô gái rất yêu anh ấy"], "correct": 3, "id": "R10"}, {"section": "Reading", "number": 11, "question": "Theo đoạn (1), Đà Lạt nằm ở đâu?", "options": ["Cao nguyên Lâm Viên", "Cao nguyên Lâm Đồng", "Cao nguyên Tây Nguyên", "Cao nguyên Việt Nam"], "correct": 0, "id": "R11"}, {"section": "Reading", "number": 12, "question": "Theo đoạn (2), Đà Lạt lúc ban đầu là một vùng đất như thế nào?", "options": ["Rất hoang sơ", "Rất đông người", "Rất xinh đẹp", "Có nhiều biệt thự, công sở."], "correct": 0, "id": "R12"}, {"section": "Reading", "number": 13, "question": "Theo đoạn (2), ai là người đi thám hiểm Đà Lạt vào năm 1893?", "options": ["Bác sĩ Alexandre Yersin", "Toàn quyền Paul Doumer", "Người dân Đà Lạt", "Người Đông Dương"], "correct": 0, "id": "R13"}, {"section": "Reading", "number": 14, "question": "Theo đoạn (3), Khí hậu ở Đà Lạt như thế nào?", "options": ["Rất nóng và ôn hòa", "Dịu mát và rất nóng", "Ôn hòa và nóng mát", "Dịu mát và ôn hòa"], "correct": 3, "id": "R14"}, {"section": "Reading", "number": 15, "question": "Theo đoạn (3), Đà Lạt nổi tiếng với những loại đặc sản gì?", "options": ["Rau và quả", "Rau và nông sản", "Rau và hoa", "Hoa và quả"], "correct": 2, "id": "R15"}, {"section": "Reading", "number": 16, "question": "Theo đoạn (3), Mỗi năm có bao nhiêu du khách đến Đà Lạt?", "options": ["Hàng ngàn du khách", "Hàng trăm du khách", "Hàng triệu du khách", "Hàng trăm triệu du khách"], "correct": 2, "id": "R16"}, {"section": "Reading", "number": 17, "question": "Theo đoạn (1), Lễ hội đua ghe Ngo diễn ra ở tỉnh nào?", "options": ["Sóc Trăng", "Cửu Long", "Nam bộ", "Ở lễ hội"], "correct": 0, "id": "R17"}, {"section": "Reading", "number": 18, "question": "Theo đoạn (1), Lễ hội đua ghe Ngo diễn ra nhằm mục đích gì?", "options": ["Thể hiện hoạt động đặc trưng của cư dân nông nghiệp lúa nước", "Thể hiện sự biết ơn đối với thần nước đã phù hộ cho người dân một mùa màng bội thu", "Thể hiện phong tục của người Khmer", "Thu hút du khách đến tham gia và cổ vũ"], "correct": 1, "id": "R18"}, {"section": "Reading", "number": 19, "question": "Theo đoạn (2), Trong lễ hội đua ghe Ngo của người Khmer, hoạt động nào được người dân và du khách trông đợi nhất?", "options": ["Đua ghe Ngo", "Đua trên cạn", "Đua dưới nước", "Đua trên bờ"], "correct": 2, "id": "R19"}, {"section": "Reading", "number": 20, "question": "Theo đoạn (3), trước khi thi đấu, tại các chùa người ta thường làm gì?", "options": ["Làm lễ cho ghe Ngo", "Làm lễ hạ thủy ghe Ngo", "Làm lễ cúng ghe Ngo", "Làm lễ tế ghe Ngo"], "correct": 1, "id": "R20"}, {"section": "Reading", "number": 21, "question": "Câu nào sau đây là câu không đúng với nội dung bài đọc?", "options": ["Phong tục đua ghe Ngo chứa rất nhiều ý nghĩa thiêng liêng đối với đồng bào dân tộc Sóc Trăng", "Đua ghe Ngo trên cạn chủ yếu là sự tái hiện, mô phỏng lại cuộc đua ghe dưới nước", "Đua ghe Ngo trên cạn không hấp dẫn bằng đua ghe Ngo dưới nước", "Lễ hội đua ghe Ngo là một ngày hội lớn để mọi người vui chơi, thi đấu tài nghệ với nhau"], "correct": 2, "id": "R21"}, {"section": "Reading", "number": 22, "question": "Câu nào sau đây là câu đúng với nội dung bài đọc?", "options": ["Phong tục đua ghe Ngo chứa rất nhiều ý nghĩa thiêng liêng đối với đồng bào dân tộc Hoa", "Phong tục đua ghe Ngo chứa rất nhiều ý nghĩa thiêng liêng đối với đồng bào dân tộc Kinh", "Người Khmer làm lễ mặc áo cho ghe Ngo là thể hiện không tin vào lực lượng siêu nhiên", "Người Khmer làm lễ mặc áo cho ghe Ngo là thể hiện niềm tin vào lực lượng siêu nhiên"], "correct": 3, "id": "R22"}, {"section": "Reading", "number": 23, "question": "Theo đoạn (4), Lễ hội nào sau đây là một nét đặc trưng văn hóa của vùng sông nước miền Tây xứng đáng được bảo tồn?", "options": ["Lễ hội Cúng Trăng", "Lễ hội đua ghe Ngo", "Lễ hội Ok Om Bok", "Lễ hội miền Tây Nam bộ"], "correct": 1, "id": "R23"}, {"section": "Reading", "number": 24, "question": "Từ “bảo tồn” ở đoạn (4) trong bài đọc có nghĩa là:", "options": ["Gìn giữ, không để bị mất mát, tổn thất", "Bảo quản không làm tổn thất", "Bảo đảm không bị mất", "Gìn giữ và đảm bảo"], "correct": 0, "id": "R24"}];
+const $ = id => document.getElementById(id);
+let quiz=[], index=0, answersChosen={}, score=0;
+const shuffle = arr => {const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+function updateAvailable(){
+ const sec=$('section').value;
+ const n=BANK.filter(q=>sec==='all'||q.section===sec).length;
+ $('available').textContent=`Available in this selection: ${n} questions. If you choose more than available, all available questions will be used.`;
+}
+$('section').addEventListener('change',updateAvailable);updateAvailable();
+$('start').onclick=()=>{
+ const sec=$('section').value, random=$('mode').value==='random';
+ let pool=BANK.filter(q=>sec==='all'||q.section===sec);
+ if(random) pool=shuffle(pool);
+ const wanted=$('count').value==='all'?pool.length:Number($('count').value);
+ pool=pool.slice(0,Math.min(wanted,pool.length));
+ quiz=pool.map(q=>{
+   let opts=q.options.map((text,i)=>({text,original:i}));
+   if(random) opts=shuffle(opts);
+   return {...q,shownOptions:opts,correctShown:q.correct===null?null:opts.findIndex(o=>o.original===q.correct)};
+ });
+ index=0;answersChosen={};score=0;
+ $('setup').classList.add('hidden');$('result').classList.add('hidden');$('quiz').classList.remove('hidden');
+ render();
+};
+function render(){
+ const q=quiz[index], chosen=answersChosen[q.id];
+ $('sectionTag').textContent=q.section==='Listening'?'NGHE • LISTENING':'ĐỌC • READING';
+ $('counter').textContent=`Question ${index+1} of ${quiz.length}`;
+ $('questionNo').textContent=`Question ${q.number}`;
+ $('questionText').textContent=q.question;
+ $('progressBar').style.width=((index+1)/quiz.length*100)+'%';
+ $('scoreNow').textContent='Score: '+score;
+ $('options').innerHTML='';
+ q.shownOptions.forEach((opt,i)=>{
+  const label=document.createElement('label');label.className='option';
+  if(chosen!==undefined && q.correctShown!==null){
+    if(i===q.correctShown)label.classList.add('correct');
+    if(i===chosen && chosen!==q.correctShown)label.classList.add('wrong');
+  }
+  const radio=document.createElement('input');radio.type='radio';radio.name='answer';radio.checked=chosen===i;radio.disabled=chosen!==undefined;
+  radio.addEventListener('change',()=>choose(i));
+  const span=document.createElement('span');span.textContent=String.fromCharCode(65+i)+'. '+opt.text;
+  label.append(radio,span);$('options').append(label);
+ });
+ const fb=$('feedback');fb.className='feedback hidden';fb.textContent='';
+ if(chosen!==undefined){
+   fb.classList.remove('hidden');
+   if(q.correctShown===null){fb.textContent='Your answer has been saved. The PDF does not provide the listening answer key.';}
+   else if(chosen===q.correctShown){fb.classList.add('good');fb.textContent='Correct! Well done.';}
+   else{fb.classList.add('bad');fb.textContent='Incorrect. The correct answer is highlighted in green.';}
+ }
+ $('prev').disabled=index===0;
+ $('next').textContent=index===quiz.length-1?'See results':'Next';
+}
+function choose(i){
+ const q=quiz[index];if(answersChosen[q.id]!==undefined)return;
+ answersChosen[q.id]=i;
+ if(q.correctShown!==null&&i===q.correctShown)score++;
+ render();
+}
+$('prev').onclick=()=>{if(index>0){index--;render();}};
+$('next').onclick=()=>{if(index<quiz.length-1){index++;render();}else showResults();};
+$('finish').onclick=showResults;
+function showResults(){
+ $('quiz').classList.add('hidden');$('result').classList.remove('hidden');
+ const known=quiz.filter(q=>q.correctShown!==null);
+ const attemptedKnown=known.filter(q=>answersChosen[q.id]!==undefined);
+ $('totalOut').textContent=quiz.length;
+ $('correctOut').textContent=score;
+ const pct=attemptedKnown.length?Math.round(score/attemptedKnown.length*100):0;
+ $('percentOut').textContent=attemptedKnown.length?pct+'%':'N/A';
+ $('resultNote').textContent=`Answered ${Object.keys(answersChosen).length}/${quiz.length}. Score is calculated only from questions with an answer key (${attemptedKnown.length} answered key-supported questions). Listening questions without an answer key are excluded from the score.`;
+}
+$('restart').onclick=()=>{$('result').classList.add('hidden');$('setup').classList.remove('hidden');};
+</script>
+</body></html>
